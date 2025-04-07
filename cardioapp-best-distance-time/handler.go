@@ -63,6 +63,19 @@ type Request struct {
 	Data map[string]interface{} `json:"data"`
 }
 
+// GetListClientApiResponse This is get list api response
+type GetListClientApiResponse struct {
+	Data GetListClientApiData `json:"data"`
+}
+
+type GetListClientApiData struct {
+	Data GetListClientApiResp `json:"data"`
+}
+
+type GetListClientApiResp struct {
+	Response []map[string]interface{} `json:"response"`
+}
+
 func DoRequest(url string, method string, body interface{}, appId string) ([]byte, error) {
 	data, err := json.Marshal(&body)
 	if err != nil {
@@ -91,4 +104,42 @@ func DoRequest(url string, method string, body interface{}, appId string) ([]byt
 	}
 
 	return respByte, nil
+}
+
+func GetSingleObject(url, tableSlug, appId, guid string) (ClientApiResp, error, Response) {
+	response := Response{}
+
+	var getSingleObject ClientApiResp
+	getSingleResponseInByte, err := DoRequest(url+"/v1/object/"+tableSlug+"/"+guid+"?from-ofs=true", "GET", nil, appId)
+	if err != nil {
+		response.Data = map[string]interface{}{"message": "Error while getting single object"}
+		response.Status = "error"
+		return ClientApiResp{}, errors.New("error"), response
+	}
+	err = json.Unmarshal(getSingleResponseInByte, &getSingleObject)
+	if err != nil {
+		response.Data = map[string]interface{}{"message": "Error while unmarshalling single object"}
+		response.Status = "error"
+		return ClientApiResp{}, errors.New("error"), response
+	}
+	return getSingleObject, nil, response
+}
+
+func GetListObject(url, tableSlug, appId string, request Request) (GetListClientApiResponse, error, Response) {
+	response := Response{}
+
+	getListResponseInByte, err := DoRequest(url+"/v1/object/get-list/"+tableSlug+"?from-ofs=true?project-id=a4dc1f1c-d20f-4c1a-abf5-b819076604bc", "POST", request, appId)
+	if err != nil {
+		response.Data = map[string]interface{}{"message\": \"Error while getting single object\"}
+		response.Status = "error"
+		return GetListClientApiResponse{}, errors.New("error"), response
+	}
+	var getListObject GetListClientApiResponse
+	err = json.Unmarshal(getListResponseInByte, &getListObject)
+	if err != nil {
+		response.Data = map[string]interface{}{"message\": \"Error while unmarshalling get list object\"}
+		response.Status = "error"
+		return GetListClientApiResponse{}, errors.New("error"), response
+	}
+	return getListObject, nil, response
 }
